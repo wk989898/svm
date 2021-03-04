@@ -2,8 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 class SVM {
     constructor(C = 1, toler = 1e-4, maxIter = 10 ^ 4, kernelType = 'linear') {
-        this.len = 0;
-        this.alpha = Array(this.len).fill(0);
+        this.row = 0;
+        this.col = 0;
+        this.alpha = Array(this.row).fill(0);
         this.C = C;
         this.tol = toler;
         this.b = 0;
@@ -17,16 +18,35 @@ class SVM {
     train(data, label) {
         this.data = data;
         this.labels = label;
-        this.len = data.length;
+        this.row = data.length;
+        this.col = data[0].length;
         this.smo();
+        return this;
     }
-    predict() {
+    predictOne(dat) {
+        var col = dat.length;
+        var f = this.b;
+        for (let i = 0; i < col; i++) {
+            var s = 0;
+            for (var j = 0; j < this.row; j++) {
+                s += this.alpha[j] * this.labels[j] * this.data[j][i];
+            }
+            f += dat[i] * s;
+        }
+        return f > 0 ? 1 : -1;
+    }
+    predict(data) {
+        var row = data.length;
+        var result = new Array(row);
+        for (let i = 0; i < row; i++)
+            result[i] = this.predictOne(data[i]);
+        return result;
     }
     kernel(i, j) {
         let s = 0;
         // linear
         if (this.kernelType == 'linear') {
-            for (let n = 0; n < this.len; n++) {
+            for (let n = 0; n < this.col; n++) {
                 s += this.data[i][n] * this.data[j][n];
             }
         }
@@ -35,16 +55,16 @@ class SVM {
     /**
      * @description 计算g(xi)与yi之差
      */
-    calcE(k) {
+    calcFx(k) {
         var f = this.b;
-        for (var i = 0; i < this.len; i++) {
+        for (var i = 0; i < this.row; i++) {
             f += this.alpha[i] * this.labels[i] * this.kernel(k, i);
         }
-        return f - this.labels[k];
+        return f;
     }
     update(i) {
         var L = 0, H = 0, eta;
-        var Ei = this.calcE(i);
+        var Ei = this.calcFx(i) - this.labels[i];
         /**
          * 不符合kkt条件 进行优化 yi*Ei=yi*gx-yi^2=yi*gx-1
          * alpha=0    yi*gx-1 >= 0
@@ -52,11 +72,12 @@ class SVM {
          * alpha=C    yi*gx-1 <= 0
          */
         if (this.labels[i] * Ei < -this.tol && this.alpha[i] < this.C || 0 < this.alpha[i] && this.labels[i] * Ei > this.tol) {
+            console.log('不符合kkt条件！需要优化');
             var j = i;
             while (j == i) {
-                j = Math.floor(Math.random() * this.len);
+                j = Math.floor(Math.random() * this.row);
             }
-            var Ej = this.calcE(j);
+            var Ej = this.calcFx(j) - this.labels[j];
             var ai = this.alpha[i];
             var aj = this.alpha[j];
             if (this.labels[i] === this.labels[j]) {
@@ -96,22 +117,26 @@ class SVM {
             this.alpha[j] = newaj;
             return 1;
         }
-        return 0;
+        else {
+            return 0;
+        }
     }
     smo() {
         var iter = 0;
         var alphaChange = 0, entry = true;
         while (iter < this.maxIter && (alphaChange > 0 || entry)) {
             if (entry) {
-                for (let i = 0; i < this.len; i++)
+                for (let i = 0; i < this.row; i++)
                     alphaChange += this.update(i);
                 console.log(`alpha changed! now is ${alphaChange} times`);
+                iter++;
             }
             else {
-                for (let i = 0; i < this.len; i++) {
+                for (let i = 0; i < this.row; i++) {
                     if (this.alpha[i] < 0 || this.alpha[i] > this.C)
                         alphaChange += this.update(i);
                     console.log(`alpha changed! now is ${alphaChange} times`);
+                    iter++;
                 }
             }
             entry = false;

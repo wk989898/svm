@@ -28,12 +28,11 @@ async function start() {
   const [ testdata, testlabels ] = await loadData('test_data')
   const svm=new SVM()
   svm.train(data,labels)
-  console.log(`${'-'.repeat(50)}\npredict...`);
   var result=svm.predict(testdata)
   var correct=result.reduce((acc,v,i)=>{
     return acc+(v==testlabels[i])
   })
-  var accuracy=100*correct/result.length
+  var accuracy=Math.abs(100*correct/result.length)
   console.log(`accuracy is: ${accuracy}%`);
 }
 

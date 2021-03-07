@@ -1,6 +1,15 @@
 type matrix<T> = T[][]
 type mat = matrix<number>
-interface Array<T> {
-  transponse(): matrix<unknown> | Array<unknown>
-}
 type kernelType ='linear' |'rbf'
+interface Options{
+   C: number
+   b: number
+   tol: number
+   alpha: number[]
+   row: number 
+   col: number 
+   toler:number
+   maxIter: number
+   kernelType: string
+   numChange:number
+}

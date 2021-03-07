@@ -1,21 +1,26 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class SVM {
-    constructor(C = 1, toler = 1e-4, maxIter = 1e4, kernelType = 'linear') {
+    constructor(option) {
         this.alpha = [];
+        this.b = 0;
         this.row = 0;
         this.col = 0;
+        const { C = 1, toler = 1e-4, maxIter = 1e4, kernelType = 'linear', numChange = 10 } = option || {};
         this.C = C;
         this.tol = toler;
-        this.b = 0;
         this.maxIter = maxIter;
         this.kernelType = kernelType;
+        this.numChange = numChange;
     }
     /**
      * @param data  [1,2,3,4]
      * @param label [1]
      */
     train(data, label) {
+        if (data.length !== label.length) {
+            throw new Error('Features and labels should have the same length');
+        }
         this.data = data.map(_ => _.map(v => parseFloat(v)));
         this.labels = label.map(v => parseFloat(v));
         this.row = data.length;
@@ -25,10 +30,9 @@ class SVM {
         return this;
     }
     predictOne(dat) {
-        var col = dat.length;
         var f = this.b;
-        for (let i = 0; i < col; i++) {
-            var s = 0;
+        for (let i = 0; i < this.col; i++) {
+            var s = 0.0;
             for (var j = 0; j < this.row; j++) {
                 s += this.alpha[j] * this.labels[j] * this.data[j][i];
             }
@@ -38,9 +42,8 @@ class SVM {
     }
     predict(data) {
         data = data.map(_ => _.map(v => parseFloat(v)));
-        var row = data.length;
-        var result = new Array(row);
-        for (let i = 0; i < row; i++)
+        var result = new Array(this.col);
+        for (let i = 0; i < this.col; i++)
             result[i] = this.predictOne(data[i]);
         return result;
     }
@@ -106,16 +109,16 @@ class SVM {
             if (Math.abs(newaj - aj) < this.tol)
                 return 0;
             var newai = ai + this.labels[i] * this.labels[j] * (aj - newaj);
-            var newb1 = -Ei - this.labels[i] * this.kernel(i, i) * (newai - ai) - this.labels[j] * this.kernel(2, 1) * (newaj - aj) + this.b;
-            var newb2 = -Ej - this.labels[i] * this.kernel(i, j) * (newai - ai) - this.labels[j] * this.kernel(2, 2) * (newaj - aj) + this.b;
-            if (0 < newb1 && newb1 < this.C)
-                this.b = newb1;
-            else if (0 < newb2 && newb2 < this.C)
-                this.b = newb2;
-            else
-                this.b = (newb1 + newb2) / 2;
             this.alpha[i] = newai;
             this.alpha[j] = newaj;
+            var newb1 = -Ei - this.labels[i] * this.kernel(i, i) * (newai - ai) - this.labels[j] * this.kernel(2, 1) * (newaj - aj) + this.b;
+            var newb2 = -Ej - this.labels[i] * this.kernel(i, j) * (newai - ai) - this.labels[j] * this.kernel(2, 2) * (newaj - aj) + this.b;
+            if (0 < newai && newai < this.C)
+                this.b = newb1;
+            else if (0 < newaj && newaj < this.C)
+                this.b = newb2;
+            else
+                this.b = (newb1 + newb2) * 0.5;
             return 1;
         }
         else {
@@ -124,24 +127,16 @@ class SVM {
     }
     smo() {
         var iter = 0;
-        var alphaChange = 0, entry = true;
-        while (iter < this.maxIter && (alphaChange > 0 || entry)) {
-            let pre = alphaChange;
-            if (entry) {
-                for (let i = 0; i < this.row; i++)
-                    alphaChange += this.update(i);
-                iter++;
-            }
-            else {
-                for (let i = 0; i < this.row; i++) {
-                    if (this.alpha[i] < 0 || this.alpha[i] > this.C)
-                        alphaChange += this.update(i);
-                }
-                iter++;
-            }
-            if (pre != alphaChange)
-                console.log(`alpha changed!  ${alphaChange} times`);
-            entry = false;
+        var alphaChange = 0;
+        var num = 0;
+        while (iter < this.maxIter && num < this.numChange) {
+            for (let i = 0; i < this.row; i++)
+                alphaChange += this.update(i);
+            iter++;
+            if (alphaChange == 0)
+                num++;
+            else
+                num = 0;
         }
     }
 }

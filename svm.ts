@@ -141,9 +141,8 @@ export default class SVM {
         }
         iter++
       }
-      if (pre!=alphaChange) console.log(`alpha changed! now is ${alphaChange} times`)
+      if (pre!=alphaChange) console.log(`alpha changed!  ${alphaChange} times`)
       entry = false
     }
   }
 }
-

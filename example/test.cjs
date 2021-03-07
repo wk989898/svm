@@ -12,7 +12,7 @@ async function loadData(file) {
   let data = [], labels = []
   return await loadFile(path.resolve(__dirname, file)).then(res => {
     let temp = []
-    res.toString().split(/ +|\r\n+/).forEach((v, i) => {
+    res.toString().split(/ +|\r|\n+/).filter(v=>v.trim()).forEach((v, i) => {
       if (i % 3 == 2) {
         labels.push(v)
         data.push(temp)
@@ -20,22 +20,21 @@ async function loadData(file) {
       }
       else temp.push(v)
     })
-    return { data, labels }
+    return [ data, labels ]
   })
 }
 async function start() {
-  const { data, labels } = await loadData('train_data')
-  const { data:testdata, labels:testlabels } = await loadData('test_data')
+  const [ data, labels ] = await loadData('train_data')
+  const [ testdata, testlabels ] = await loadData('test_data')
   const svm=new SVM()
   svm.train(data,labels)
   console.log(`${'-'.repeat(50)}\npredict...`);
   var result=svm.predict(testdata)
   var correct=result.reduce((acc,v,i)=>{
-    let label=testlabels[i]>0?1:-1;
-    return acc+(v==label)
+    return acc+(v==testlabels[i])
   })
-  var accuracy=(100*correct/result.length)
-  console.log(`accuracy is: ${accuracy}`);
+  var accuracy=100*correct/result.length
+  console.log(`accuracy is: ${accuracy}%`);
 }
 
 

@@ -140,7 +140,7 @@ class SVM {
                 iter++;
             }
             if (pre != alphaChange)
-                console.log(`alpha changed! now is ${alphaChange} times`);
+                console.log(`alpha changed!  ${alphaChange} times`);
             entry = false;
         }
     }

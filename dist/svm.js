@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class SVM {
-    constructor(C = 1, toler = 1e-4, maxIter = 10 ^ 4, kernelType = 'linear') {
+    constructor(C = 1, toler = 1e-4, maxIter = 1e4, kernelType = 'linear') {
+        this.alpha = [];
         this.row = 0;
         this.col = 0;
-        this.alpha = Array(this.row).fill(0);
         this.C = C;
         this.tol = toler;
         this.b = 0;
@@ -16,10 +16,11 @@ class SVM {
      * @param label [1]
      */
     train(data, label) {
-        this.data = data;
-        this.labels = label;
+        this.data = data.map(_ => _.map(v => parseFloat(v)));
+        this.labels = label.map(v => parseFloat(v));
         this.row = data.length;
         this.col = data[0].length;
+        this.alpha = new Array(this.row).fill(0);
         this.smo();
         return this;
     }
@@ -36,6 +37,7 @@ class SVM {
         return f > 0 ? 1 : -1;
     }
     predict(data) {
+        data = data.map(_ => _.map(v => parseFloat(v)));
         var row = data.length;
         var result = new Array(row);
         for (let i = 0; i < row; i++)
@@ -72,7 +74,6 @@ class SVM {
          * alpha=C    yi*gx-1 <= 0
          */
         if (this.labels[i] * Ei < -this.tol && this.alpha[i] < this.C || 0 < this.alpha[i] && this.labels[i] * Ei > this.tol) {
-            console.log('不符合kkt条件！需要优化');
             var j = i;
             while (j == i) {
                 j = Math.floor(Math.random() * this.row);
@@ -125,20 +126,21 @@ class SVM {
         var iter = 0;
         var alphaChange = 0, entry = true;
         while (iter < this.maxIter && (alphaChange > 0 || entry)) {
+            let pre = alphaChange;
             if (entry) {
                 for (let i = 0; i < this.row; i++)
                     alphaChange += this.update(i);
-                console.log(`alpha changed! now is ${alphaChange} times`);
                 iter++;
             }
             else {
                 for (let i = 0; i < this.row; i++) {
                     if (this.alpha[i] < 0 || this.alpha[i] > this.C)
                         alphaChange += this.update(i);
-                    console.log(`alpha changed! now is ${alphaChange} times`);
-                    iter++;
                 }
+                iter++;
             }
+            if (pre != alphaChange)
+                console.log(`alpha changed! now is ${alphaChange} times`);
             entry = false;
         }
     }

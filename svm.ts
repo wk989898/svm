@@ -4,13 +4,12 @@ export default class SVM {
   public C: number
   public b: number
   public tol: number
-  public alpha: number[]
+  public alpha: number[]=[]
   public row: number = 0
   public col: number = 0
   private maxIter: number
   private kernelType: string
-  constructor(C: number = 1, toler: number = 1e-4, maxIter: number = 10 ^ 4, kernelType = 'linear') {
-    this.alpha = Array(this.row).fill(0)
+  constructor(C: number = 1, toler: number = 1e-4, maxIter: number = 1e4, kernelType = 'linear') {
     this.C = C
     this.tol = toler
     this.b = 0;
@@ -21,11 +20,12 @@ export default class SVM {
    * @param data  [1,2,3,4] 
    * @param label [1]
    */
-  public train(data: mat, label: number[]) {
-    this.data = data
-    this.labels = label
+  public train(data: matrix<any>, label: any[]) {
+    this.data = data.map(_=>_.map(v=>parseFloat(v)))
+    this.labels = label.map(v=>parseFloat(v))
     this.row = data.length
     this.col = data[0].length
+    this.alpha = new Array(this.row).fill(0)
     this.smo()
     return this
   }
@@ -42,7 +42,8 @@ export default class SVM {
     return f > 0 ? 1 : -1
   }
 
-  public predict(data: mat) {
+  public predict(data: matrix<any>) {
+    data = data.map(_=>_.map(v=>parseFloat(v)))
     var row = data.length
     var result = new Array(row)
     for (let i = 0; i < row; i++)
@@ -66,10 +67,11 @@ export default class SVM {
   private calcFx(k: number): number {
     var f = this.b;
     for (var i = 0; i < this.row; i++) {
-      f += this.alpha[i] * this.labels[i] * this.kernel(k, i);
+      f += this.alpha[i]  * this.labels[i] * this.kernel(k, i)
     }
     return f
   }
+
   private update(i: number): number {
     var L = 0, H = 0, eta
     var Ei = this.calcFx(i) - this.labels[i]
@@ -80,7 +82,6 @@ export default class SVM {
      * alpha=C    yi*gx-1 <= 0
      */
     if (this.labels[i] * Ei < -this.tol && this.alpha[i] < this.C || 0 < this.alpha[i] && this.labels[i] * Ei > this.tol) {
-      console.log('不符合kkt条件！需要优化');
       var j = i
       while (j == i) {
         j = Math.floor(Math.random() * this.row);
@@ -127,20 +128,20 @@ export default class SVM {
     var iter = 0
     var alphaChange = 0, entry = true
     while (iter < this.maxIter && (alphaChange > 0 || entry)) {
+      let pre=alphaChange
       if (entry) {
         for (let i = 0; i < this.row; i++)
           alphaChange += this.update(i)
-        console.log(`alpha changed! now is ${alphaChange} times`)
         iter++
       }
       else {
         for (let i = 0; i < this.row; i++) {
           if (this.alpha[i] < 0 || this.alpha[i] > this.C)
             alphaChange += this.update(i)
-          console.log(`alpha changed! now is ${alphaChange} times`)
-          iter++
         }
+        iter++
       }
+      if (pre!=alphaChange) console.log(`alpha changed! now is ${alphaChange} times`)
       entry = false
     }
   }

@@ -1,3 +1,3 @@
 
-# svm implementation in javascript
+# svm implementation in typescript
 

@@ -1,7 +1,8 @@
-import utils from 'util'
-import fs from 'fs'
-import SVM from '../dist/svm.js'
-const loadFile = utils.promisify(fs.readFile);
+const { promisify } = require('util')
+const { readFile } = require('fs')
+const path=require('path')
+const loadFile = promisify(readFile)
+const SVM =  require('../dist/svm.js').default
 /**
  * svm train and predict
  */
@@ -20,20 +21,15 @@ async function loadData(file) {
       else temp.push(v)
     })
     return [ data, labels ]
-  })
-}
+     })
+}  
 async function start() {
   const [ data, labels ] = await loadData('train_data')
   const [ testdata, testlabels ] = await loadData('test_data')
   const svm=new SVM()
   svm.train(data,labels)
-  console.log(`${'-'.repeat(50)}\npredict...`);
   var result=svm.predict(testdata)
-  var correct=result.reduce((acc,v,i)=>{
-    return acc+(v==testlabels[i])
-  })
+  var correct=result.reduce((acc,v,i)=> acc+(v==testlabels[i]),0)
   var accuracy=100*correct/result.length
   console.log(`accuracy is: ${accuracy}%`);
 }
-
-

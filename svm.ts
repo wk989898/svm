@@ -37,9 +37,10 @@ export default class SVM {
     return this
   }
   private predictOne(dat: number[]) {
+    if(this.col!=dat.length) throw new Error('col is not equal!')
     var f = this.b
     for (let i = 0; i < this.col; i++) {
-      var s = 0.0;
+      var s = 0;
       for (var j = 0; j < this.row; j++) {
         s += this.alpha[j] * this.labels[j] * this.data[j][i];
       }
@@ -49,9 +50,10 @@ export default class SVM {
   }
 
   public predict(data: matrix<any>) {
+    if(this.row!=data.length) throw new Error('row is not equal!')
     data = data.map(_=>_.map(v=>parseFloat(v)))
-    var result = new Array(this.col)
-    for (let i = 0; i < this.col; i++)
+    var result = new Array(this.row)
+    for (let i = 0; i < this.row; i++)
       result[i] = this.predictOne(data[i])
     return result
   }
